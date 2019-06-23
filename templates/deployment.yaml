@@ -1,0 +1,78 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "guestbook.fullname" . }}-guestbookweb
+  labels:
+    app: {{ template "guestbook.name" . }}-guestbookweb
+    chart: {{ template "guestbook.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "guestbook.name" . }}-guestbookweb
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "guestbook.name" . }}-guestbookweb
+        release: {{ .Release.Name }}
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}-guestbookweb
+        image: {{ .Values.image.repository }}/guestbookweb
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+          - name: VERSION
+            value: "1"
+        ports:
+        - containerPort: 9080
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: {{ template "guestbook.fullname" . }}-guestbookdb
+  labels:
+    app: {{ template "guestbook.name" . }}-guestbookdb
+    chart: {{ template "guestbook.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ template "guestbook.name" . }}-guestbookdb
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "guestbook.name" . }}-guestbookdb
+        release: {{ .Release.Name }}
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}-guestbookdb
+        image: {{ .Values.image.repository }}/guestbookdb
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 3306
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "sivareddy"
+          - name: MYSQL_DATABASE
+            value: "guestbook"
+          - name: MYSQL_USER
+            value: "sivareddy"
+          - name: MYSQL_PASSWORD
+            value: "sivareddy"
